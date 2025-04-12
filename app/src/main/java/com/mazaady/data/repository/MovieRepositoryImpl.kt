@@ -1,66 +1,91 @@
 package com.mazaady.data.repository
 
+import androidx.paging.ExperimentalPagingApi
 import androidx.paging.Pager
 import androidx.paging.PagingConfig
 import androidx.paging.PagingData
 import androidx.paging.map
-import com.mazaady.data.api.MovieApi
+import com.mazaady.data.api.MovieApiService
 import com.mazaady.data.db.MovieDao
-import com.mazaady.data.model.MovieDto
+import com.mazaady.data.db.MovieEntity
+import com.mazaady.data.paging.MovieRemoteMediator
+import com.mazaady.data.util.NetworkResult
+import com.mazaady.data.util.safeApiCall
 import com.mazaady.domain.model.Movie
 import com.mazaady.domain.repository.MovieRepository
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
+import timber.log.Timber
 import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MovieRepositoryImpl @Inject constructor(
-    private val api: MovieApi,
-    private val dao: MovieDao,
-    private val moviePagingSource: MoviePagingSource
+    private val api: MovieApiService,
+    private val dao: MovieDao
 ) : MovieRepository {
 
+    companion object {
+        const val PAGE_SIZE = 20
+        const val PREFETCH_DISTANCE = PAGE_SIZE
+    }
+
+    @OptIn(ExperimentalPagingApi::class)
     override fun getMovies(): Flow<PagingData<Movie>> {
         return Pager(
             config = PagingConfig(
-                pageSize = 20,
+                pageSize = PAGE_SIZE,
                 enablePlaceholders = false,
-                prefetchDistance = 5
+                prefetchDistance = PREFETCH_DISTANCE
             ),
-            pagingSourceFactory = { moviePagingSource }
-        ).flow
-    }
-
-    override suspend fun getMovieDetails(movieId: Int): Movie {
-        val response = api.getMovieDetails(movieId)
-        return response.movies.first().toDomainModel()
-    }
-
-    override suspend fun toggleFavorite(movie: Movie) {
-        if (dao.isMovieFavorite(movie.id).first()) {
-            dao.deleteMovie(movie.toEntity())
-        } else {
-            dao.insertMovie(movie.toEntity())
+            remoteMediator = MovieRemoteMediator(api, dao),
+            pagingSourceFactory = { dao.getMovies() }
+        ).flow.map { pagingData ->
+            pagingData.map { entity -> entity.toDomainModel() }
         }
     }
 
-    override fun getFavoriteMovies(): Flow<List<Movie>> {
-        return dao.getFavoriteMovies().map { entities ->
-            entities.map { it.toDomainModel() }
+    override fun getFavoriteMovies(): Flow<NetworkResult<List<Movie>>> = flow {
+        try {
+            dao.getFavoriteMovies()
+                .collect { entities ->
+                    emit(NetworkResult.Success(entities.map { it.toDomainModel() }))
+                }
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting favorite movies")
+            emit(NetworkResult.Error(e.message ?: "Unknown error"))
+        }
+    }
+
+    override suspend fun toggleFavorite(movie: Movie): NetworkResult<Unit> {
+        return try {
+            val existingMovie = dao.getMovie(movie.id)
+            if (existingMovie == null) {
+                // If movie doesn't exist in DB, insert it first
+                dao.insertMovies(listOf(MovieEntity.fromDomainModel(movie.copy(isFavorite = true))))
+            } else {
+                // If movie exists, toggle its favorite status
+                dao.updateMovie(existingMovie.copy(isFavorite = !existingMovie.isFavorite))
+            }
+            Timber.d("Successfully toggled favorite for movie ${movie.id}")
+            NetworkResult.Success(Unit)
+        } catch (e: Exception) {
+            Timber.e(e, "Error toggling favorite for movie ${movie.id}")
+            NetworkResult.Error("Failed to update favorite status")
+        }
+    }
+
+    override suspend fun getMovieDetails(movieId: Int): NetworkResult<Movie> {
+        return safeApiCall {
+            val movie = api.getMovieDetails(movieId).toDomainModel()
+            movie.copy(isFavorite = dao.isMovieFavorite(movieId).first())
         }
     }
 
     override fun isMovieFavorite(movieId: Int): Flow<Boolean> {
         return dao.isMovieFavorite(movieId)
     }
-
-    private fun MovieDto.toDomainModel() = Movie(
-        id = id,
-        title = title,
-        posterUrl = if (posterPath != null) "${Movie.IMAGE_BASE_URL}$posterPath" else null,
-        releaseDate = releaseDate,
-        overview = overview,
-        rating = rating,
-        genreIds = genreIds,
-        runtime = runtime
-    )
 }

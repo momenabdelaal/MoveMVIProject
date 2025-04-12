@@ -1,26 +1,29 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
+    alias(libs.plugins.ksp)
     alias(libs.plugins.hilt)
-    alias(libs.plugins.kotlin.kapt)
     alias(libs.plugins.navigation.safeargs)
+    id("kotlin-parcelize")
 }
 
 android {
     namespace = "com.mazaady"
-    compileSdk = 33
+    compileSdk = 34
 
     defaultConfig {
         applicationId = "com.mazaady"
         minSdk = 24
-        targetSdk = 33
+        targetSdk = 34
         versionCode = 1
         versionName = "1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        buildConfigField("String", "TMDB_API_KEY", "\"YOUR_API_KEY_HERE\"")
-        buildConfigField("String", "BASE_URL", "\"https://api.themoviedb.org/3/\"")
+        // Room schema location
+        ksp {
+            arg("room.schemaLocation", "$projectDir/schemas")
+        }
     }
 
     buildTypes {
@@ -32,9 +35,8 @@ android {
             )
         }
     }
-    
+
     buildFeatures {
-        buildConfig = true
         viewBinding = true
     }
 
@@ -42,59 +44,50 @@ android {
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
-    
+
     kotlinOptions {
         jvmTarget = "1.8"
     }
 }
 
 dependencies {
-    // Core Android
-    implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.appcompat)
+    // AndroidX
+    implementation(libs.core.ktx)
+    implementation(libs.appcompat)
     implementation(libs.material)
-
-    // Hilt
-    implementation(libs.hilt.android)
-    kapt(libs.hilt.compiler)
-
-    // Retrofit
-    implementation(libs.retrofit.core)
-    implementation(libs.retrofit.converter.gson)
-    implementation(libs.okhttp.logging)
 
     // Room
     implementation(libs.room.runtime)
     implementation(libs.room.ktx)
     implementation(libs.room.paging)
-    kapt(libs.room.compiler)
-
-    // Lifecycle
-    implementation(libs.lifecycle.viewmodel)
-    implementation(libs.lifecycle.runtime)
+    implementation(libs.androidx.swiperefreshlayout)
+    ksp(libs.room.compiler)
 
     // Navigation
-    implementation(libs.navigation.fragment)
-    implementation(libs.navigation.ui)
+    implementation(libs.navigation.fragment.ktx)
+    implementation(libs.navigation.ui.ktx)
+
+    // Hilt
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Retrofit
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.gson)
+    implementation(libs.okhttp.logging.interceptor)
 
     // Paging
     implementation(libs.paging.runtime)
 
-    // Coroutines
-    implementation(libs.coroutines.core)
-    implementation(libs.coroutines.android)
-
-    // Image Loading
+    // Glide
     implementation(libs.glide)
-    kapt(libs.glide.compiler)
+    ksp(libs.glide.compiler)
 
-    // Logging
+    // Timber
     implementation(libs.timber)
 
     // Testing
     testImplementation(libs.junit)
-    testImplementation(libs.mockk)
-    testImplementation(libs.coroutines.test)
-    androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.espresso.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.espresso.core)
 }

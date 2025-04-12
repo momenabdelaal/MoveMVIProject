@@ -1,25 +1,28 @@
 <?xml version="1.0" encoding="utf-8"?>
 <navigation xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/nav_graph"
     app:startDestination="@id/homeFragment">
 
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.mazaady.presentation.home.HomeFragment"
-        android:label="Movies">
+        android:label="Movies"
+        tools:layout="@layout/fragment_home">
         <action
-            android:id="@+id/action_home_to_details"
+            android:id="@+id/actionHomeToDetailsFragment"
             app:destination="@id/detailsFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/detailsFragment"
         android:name="com.mazaady.presentation.details.DetailsFragment"
-        android:label="Movie Details">
+        android:label="Movie Details"
+        tools:layout="@layout/fragment_details">
         <argument
-            android:name="movieId"
-            app:argType="integer" />
+            android:name="movie"
+            app:argType="com.mazaady.domain.model.Movie" />
     </fragment>
 
 </navigation>

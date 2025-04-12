@@ -2,10 +2,17 @@
 plugins {
     alias(libs.plugins.android.application) apply false
     alias(libs.plugins.kotlin.android) apply false
-    alias(libs.plugins.kotlin.kapt) apply false
     alias(libs.plugins.hilt) apply false
+    alias(libs.plugins.ksp) apply false
+    alias(libs.plugins.navigation.safeargs) apply false
 }
 
-tasks.register("clean", Delete::class) {
-    delete(rootProject.buildDir)
+buildscript {
+    repositories {
+        google()
+        mavenCentral()
+    }
+    dependencies {
+        classpath(libs.navigation.safe.args.gradle.plugin)
+    }
 }

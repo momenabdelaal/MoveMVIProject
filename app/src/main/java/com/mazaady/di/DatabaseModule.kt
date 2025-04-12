@@ -1,8 +1,8 @@
 package com.mazaady.di
 
 import android.content.Context
-import androidx.room.Room
-import com.mazaady.data.db.MovieDatabase
+import com.mazaady.data.db.AppDatabase
+import com.mazaady.data.db.MovieDao
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -16,17 +16,11 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideMovieDatabase(
+    fun provideAppDatabase(
         @ApplicationContext context: Context
-    ): MovieDatabase {
-        return Room.databaseBuilder(
-            context,
-            MovieDatabase::class.java,
-            "movies.db"
-        ).build()
-    }
+    ): AppDatabase = AppDatabase.getInstance(context)
 
     @Provides
     @Singleton
-    fun provideMovieDao(database: MovieDatabase) = database.movieDao()
+    fun provideMovieDao(db: AppDatabase): MovieDao = db.movieDao()
 }

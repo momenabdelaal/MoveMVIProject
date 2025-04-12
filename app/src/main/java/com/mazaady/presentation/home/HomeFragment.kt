@@ -1,9 +1,7 @@
 package com.mazaady.presentation.home
 
 import android.os.Bundle
-import android.view.LayoutInflater
 import android.view.View
-import android.view.ViewGroup
 import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -13,89 +11,91 @@ import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mazaady.R
 import com.mazaady.databinding.FragmentHomeBinding
+import com.mazaady.domain.model.Movie
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class HomeFragment : Fragment() {
-
-    private var _binding: FragmentHomeBinding? = null
-    private val binding get() = _binding!!
+class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private val viewModel: HomeViewModel by viewModels()
-    private val movieAdapter by lazy {
-        MovieAdapter(
-            onMovieClick = { movie ->
-                viewModel.dispatchIntent(HomeIntent.NavigateToDetails(movie.id))
-                findNavController().navigate(
-                    HomeFragmentDirections.actionHomeToDetails(movie.id)
-                )
-            },
-            onFavoriteClick = { movie ->
-                viewModel.dispatchIntent(HomeIntent.ToggleFavorite(movie))
-            }
-        )
-    }
-
-    override fun onCreateView(
-        inflater: LayoutInflater,
-        container: ViewGroup?,
-        savedInstanceState: Bundle?
-    ): View {
-        _binding = FragmentHomeBinding.inflate(inflater, container, false)
-        return binding.root
-    }
+    private var _binding: FragmentHomeBinding? = null
+    private val binding get() = _binding!!
+    private val movieAdapter = MovieAdapter(
+        onMovieClick = { movie -> navigateToDetails(movie) },
+        onFavoriteClick = { movie -> toggleFavorite(movie) }
+    )
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+        _binding = FragmentHomeBinding.bind(view)
         setupRecyclerView()
-        setupToolbar()
+        setupListeners()
         observeState()
-        
-        if (savedInstanceState == null) {
-            viewModel.dispatchIntent(HomeIntent.LoadMovies)
-        }
+        viewModel.processIntent(HomeIntent.LoadMovies)
     }
 
     private fun setupRecyclerView() {
-        binding.recyclerView.adapter = movieAdapter
-        binding.swipeRefresh.setOnRefreshListener {
-            movieAdapter.refresh()
+        binding.recyclerView.apply {
+            adapter = movieAdapter
+            layoutManager = GridLayoutManager(requireContext(), 2).apply {
+                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
+                    override fun getSpanSize(position: Int): Int {
+                        return 1 // Each item takes 1 span (so 2 items per row)
+                    }
+                }
+            }
+            setHasFixedSize(true)
+            addItemDecoration(MovieItemDecoration(requireContext()))
         }
     }
 
-    private fun setupToolbar() {
-        binding.toolbar.setOnMenuItemClickListener { menuItem ->
-            when (menuItem.itemId) {
-                R.id.action_toggle_view -> {
-                    val isGrid = binding.recyclerView.layoutManager is LinearLayoutManager
-                    viewModel.dispatchIntent(HomeIntent.ToggleViewType(isGrid))
-                    true
-                }
-                else -> false
-            }
+    private fun setupListeners() {
+        binding.swipeRefreshLayout.setOnRefreshListener {
+            viewModel.processIntent(HomeIntent.RefreshMovies)
+        }
+
+        binding.toggleButton.setOnClickListener {
+            viewModel.processIntent(HomeIntent.ToggleLayout)
         }
     }
 
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
-                binding.progressBar.isVisible = state.isLoading
-                binding.errorView.isVisible = state.error != null
-                binding.errorView.text = state.error
+                binding.swipeRefreshLayout.isRefreshing = state.isLoading
+                binding.errorText.isVisible = state.error != null
+                binding.errorText.text = state.error
 
-                // Update layout manager based on view type
-                binding.recyclerView.layoutManager = if (state.isGrid) {
-                    GridLayoutManager(requireContext(), 2)
-                } else {
-                    LinearLayoutManager(requireContext())
+                // Update layout manager
+                if (state.isGrid != (binding.recyclerView.layoutManager is GridLayoutManager)) {
+                    binding.recyclerView.layoutManager = if (state.isGrid) {
+                        GridLayoutManager(requireContext(), 2)
+                    } else {
+                        LinearLayoutManager(requireContext())
+                    }
                 }
 
-                movieAdapter.submitData(state.movies)
-                binding.swipeRefresh.isRefreshing = false
+                // Collect movies
+                state.movies?.let { moviesFlow ->
+                    moviesFlow.collectLatest { pagingData ->
+                        movieAdapter.submitData(pagingData)
+                    }
+                }
             }
         }
+    }
+
+    private fun navigateToDetails(movie: Movie) {
+        viewModel.processIntent(HomeIntent.NavigateToDetails(movie))
+        findNavController().navigate(
+            HomeFragmentDirections.actionHomeToDetailsFragment(movie)
+        )
+    }
+
+    private fun toggleFavorite(movie: Movie) {
+        viewModel.processIntent(HomeIntent.ToggleFavorite(movie))
     }
 
     override fun onDestroyView() {

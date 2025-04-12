@@ -9,6 +9,7 @@ import com.bumptech.glide.Glide
 import com.mazaady.R
 import com.mazaady.databinding.ItemMovieBinding
 import com.mazaady.domain.model.Movie
+import timber.log.Timber
 
 class MovieAdapter(
     private val onMovieClick: (Movie) -> Unit,
@@ -46,8 +47,9 @@ class MovieAdapter(
         fun bind(movie: Movie) {
             binding.apply {
                 titleText.text = movie.title
-                releaseDateText.text = movie.releaseDate
+                yearText.text = movie.year.toString()
                 
+                Timber.d("Loading poster: ${movie.posterUrl}")
                 Glide.with(posterImage)
                     .load(movie.posterUrl)
                     .placeholder(R.drawable.ic_movie_placeholder)

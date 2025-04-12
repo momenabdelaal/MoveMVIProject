@@ -1,10 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">MazaadyTask</string>
+    <string name="app_name">Mazaady</string>
+    <string name="search">Search</string>
+    <string name="toggle_layout">Toggle Layout</string>
     <string name="toggle_favorite">Toggle Favorite</string>
     <string name="toggle_view">Toggle View</string>
-    <string name="overview">Overview</string>
     <string name="error_loading_movies">Error loading movies</string>
     <string name="error_loading_movie">Error loading movie details</string>
-    <string name="release_date_format">Release Date: %s</string>
-    <string name="runtime_format">Runtime: %d min</string>
+    <string name="retry">Retry</string>
+    <string name="runtime_format">%d minutes</string>
 </resources>

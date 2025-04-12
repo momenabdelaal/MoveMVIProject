@@ -6,18 +6,27 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MovieDao {
-    @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun insertMovie(movie: MovieEntity)
+    @Query("SELECT * FROM movies ORDER BY id ASC")
+    fun getMovies(): PagingSource<Int, MovieEntity>
 
-    @Delete
-    suspend fun deleteMovie(movie: MovieEntity)
+    @Query("SELECT * FROM movies WHERE id = :movieId")
+    suspend fun getMovie(movieId: Int): MovieEntity?
 
-    @Query("SELECT * FROM movies")
+    @Query("SELECT * FROM movies WHERE isFavorite = 1")
     fun getFavoriteMovies(): Flow<List<MovieEntity>>
 
-    @Query("SELECT EXISTS(SELECT 1 FROM movies WHERE id = :movieId)")
-    fun isMovieFavorite(movieId: Int): Flow<Boolean>
+    @Insert(onConflict = OnConflictStrategy.REPLACE)
+    suspend fun insertMovies(movies: List<MovieEntity>)
 
-    @Query("SELECT * FROM movies")
-    fun getFavoriteMoviesPaged(): PagingSource<Int, MovieEntity>
+    @Update
+    suspend fun updateMovie(movie: MovieEntity)
+
+    @Query("DELETE FROM movies")
+    suspend fun clearMovies()
+
+    @Query("SELECT COUNT(*) FROM movies")
+    suspend fun getMovieCount(): Int
+
+    @Query("SELECT EXISTS(SELECT 1 FROM movies WHERE id = :movieId AND isFavorite = 1)")
+    fun isMovieFavorite(movieId: Int): Flow<Boolean>
 }
