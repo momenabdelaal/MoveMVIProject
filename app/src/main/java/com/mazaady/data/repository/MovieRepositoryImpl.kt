@@ -64,13 +64,14 @@ class MovieRepositoryImpl @Inject constructor(
         return try {
             val existingMovie = dao.getMovie(movie.id)
             if (existingMovie == null) {
-                // If movie doesn't exist in DB, insert it first
+                // If movie doesn't exist in DB, insert it with favorite status
                 dao.insertMovies(listOf(MovieEntity.fromDomainModel(movie.copy(isFavorite = true))))
+                Timber.d("Inserted new favorite movie ${movie.id}")
             } else {
-                // If movie exists, toggle its favorite status
-                dao.updateMovie(existingMovie.copy(isFavorite = !existingMovie.isFavorite))
+                // If movie exists, use the transaction to toggle its favorite status
+                dao.toggleFavorite(movie.id)
+                Timber.d("Toggled favorite status for movie ${movie.id}")
             }
-            Timber.d("Successfully toggled favorite for movie ${movie.id}")
             NetworkResult.Success(Unit)
         } catch (e: Exception) {
             Timber.e(e, "Error toggling favorite for movie ${movie.id}")
@@ -79,9 +80,13 @@ class MovieRepositoryImpl @Inject constructor(
     }
 
     override suspend fun getMovieDetails(movieId: Int): NetworkResult<Movie> {
-        return safeApiCall {
-            val movie = api.getMovieDetails(movieId).toDomainModel()
-            movie.copy(isFavorite = dao.isMovieFavorite(movieId).first())
+        return try {
+            val movieDto = api.getMovieDetails(movieId)
+            val isFavorite = dao.getFavoriteStatus(movieId) ?: false
+            NetworkResult.Success(movieDto.toDomainModel().copy(isFavorite = isFavorite))
+        } catch (e: Exception) {
+            Timber.e(e, "Error getting movie details for movie $movieId")
+            NetworkResult.Error(e.message ?: "Failed to get movie details")
         }
     }
 

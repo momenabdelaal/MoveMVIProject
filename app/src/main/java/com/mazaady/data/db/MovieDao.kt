@@ -12,7 +12,7 @@ interface MovieDao {
     @Query("SELECT * FROM movies WHERE id = :movieId")
     suspend fun getMovie(movieId: Int): MovieEntity?
 
-    @Query("SELECT * FROM movies WHERE isFavorite = 1")
+    @Query("SELECT * FROM movies WHERE isFavorite = 1 ORDER BY id ASC")
     fun getFavoriteMovies(): Flow<List<MovieEntity>>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
@@ -27,6 +27,18 @@ interface MovieDao {
     @Query("SELECT COUNT(*) FROM movies")
     suspend fun getMovieCount(): Int
 
-    @Query("SELECT EXISTS(SELECT 1 FROM movies WHERE id = :movieId AND isFavorite = 1)")
+    @Query("SELECT isFavorite FROM movies WHERE id = :movieId")
+    suspend fun getFavoriteStatus(movieId: Int): Boolean?
+
+    @Query("SELECT isFavorite FROM movies WHERE id = :movieId")
     fun isMovieFavorite(movieId: Int): Flow<Boolean>
+
+    @Query("UPDATE movies SET isFavorite = :isFavorite WHERE id = :movieId")
+    suspend fun updateFavoriteStatus(movieId: Int, isFavorite: Boolean)
+
+    @Transaction
+    suspend fun toggleFavorite(movieId: Int) {
+        val currentFavorite = getFavoriteStatus(movieId) ?: false
+        updateFavoriteStatus(movieId, !currentFavorite)
+    }
 }

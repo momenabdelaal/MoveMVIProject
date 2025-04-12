@@ -7,6 +7,7 @@ import androidx.paging.RemoteMediator
 import com.mazaady.data.api.MovieApiService
 import com.mazaady.data.db.MovieDao
 import com.mazaady.data.db.MovieEntity
+import kotlinx.coroutines.flow.first
 import timber.log.Timber
 import javax.inject.Inject
 
@@ -43,13 +44,30 @@ class MovieRemoteMediator @Inject constructor(
 
             try {
                 val response = api.getMovies(limit = state.config.pageSize)
-                val movies = response.map { MovieEntity.fromDomainModel(it.toDomainModel()) }
+                val movies = response.map { dto ->
+                    val movie = dto.toDomainModel()
+                    val isFavorite = dao.getFavoriteStatus(movie.id) ?: false
+                    MovieEntity.fromDomainModel(movie.copy(isFavorite = isFavorite))
+                }
                 Timber.d("Loaded ${movies.size} movies")
 
                 if (loadType == LoadType.REFRESH) {
+                    // Get current favorite movies before clearing
+                    val favoriteMovies = dao.getFavoriteMovies().first()
+                    val favoriteIds = favoriteMovies.map { it.id }.toSet()
+                    
+                    // Clear and reinsert with preserved favorite status
                     dao.clearMovies()
+                    dao.insertMovies(movies.map { movie ->
+                        if (favoriteIds.contains(movie.id)) {
+                            movie.copy(isFavorite = true)
+                        } else {
+                            movie
+                        }
+                    })
+                } else {
+                    dao.insertMovies(movies)
                 }
-                dao.insertMovies(movies)
 
                 MediatorResult.Success(
                     endOfPaginationReached = movies.size < state.config.pageSize
