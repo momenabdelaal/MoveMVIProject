@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.mazaady.R
 import com.mazaady.databinding.FragmentFavoritesBinding
 import com.mazaady.domain.model.Movie
+import com.mazaady.presentation.common.ErrorState
 import com.mazaady.presentation.home.MovieAdapter
 import com.mazaady.presentation.home.MovieItemDecoration
 import dagger.hilt.android.AndroidEntryPoint
@@ -48,13 +49,7 @@ class FavoritesFragment : Fragment(R.layout.fragment_favorites) {
     private fun setupRecyclerView() {
         binding.recyclerView.apply {
             adapter = movieAdapter
-            layoutManager = GridLayoutManager(requireContext(), 2).apply {
-                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                    override fun getSpanSize(position: Int): Int {
-                        return 1 // Each item takes 1 span (so 2 items per row)
-                    }
-                }
-            }
+            layoutManager = GridLayoutManager(requireContext(), 2)
             setHasFixedSize(true)
             addItemDecoration(MovieItemDecoration(requireContext()))
         }
@@ -73,9 +68,9 @@ class FavoritesFragment : Fragment(R.layout.fragment_favorites) {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
-                binding.swipeRefreshLayout.isRefreshing = state.isLoading
-                binding.errorText.isVisible = state.error != null
-                binding.errorText.text = state.error
+                binding.swipeRefreshLayout.isRefreshing = false
+                binding.loadingIndicator.isVisible = state.isLoading && !binding.swipeRefreshLayout.isRefreshing
+                handleError(state)
 
                 // Update layout manager
                 if (state.isGrid != (binding.recyclerView.layoutManager is GridLayoutManager)) {
@@ -87,13 +82,36 @@ class FavoritesFragment : Fragment(R.layout.fragment_favorites) {
                 }
 
                 // Update movies
-                movieAdapter.submitList(state.movies)
+                if (!state.isLoading && state.error == null) {
+                    movieAdapter.submitList(state.movies)
+                }
             }
         }
     }
 
+    private fun handleError(state: FavoritesState) {
+        val errorState = when {
+            state.error?.contains("internet", ignoreCase = true) == true -> ErrorState.NoInternet
+            state.error != null -> ErrorState.ServerError
+            state.movies.isEmpty() -> ErrorState.EmptyFavorites
+            else -> null
+        }
+
+        if (errorState != null) {
+            binding.errorStateView.apply {
+                isVisible = true
+                setErrorState(errorState) {
+                    viewModel.processIntent(FavoritesIntent.LoadFavorites)
+                }
+            }
+            binding.recyclerView.isVisible = false
+        } else {
+            binding.errorStateView.isVisible = false
+            binding.recyclerView.isVisible = true
+        }
+    }
+
     private fun navigateToDetails(movie: Movie) {
-        viewModel.processIntent(FavoritesIntent.NavigateToDetails(movie))
         findNavController().navigate(
             FavoritesFragmentDirections.actionFavoritesToDetailsFragment(movie)
         )

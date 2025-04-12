@@ -12,6 +12,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.mazaady.R
 import com.mazaady.databinding.FragmentHomeBinding
 import com.mazaady.domain.model.Movie
+import com.mazaady.presentation.common.ErrorState
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
@@ -38,27 +39,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     }
 
     private fun setupToolbar() {
+        binding.toolbar.apply {
+            title = getString(R.string.app_name)
+            setTitleTextColor(resources.getColor(R.color.white, null))
+        }
         binding.favoriteButton.setOnClickListener {
             findNavController().navigate(
                 HomeFragmentDirections.actionHomeToFavoritesFragment()
             )
         }
-
-//        binding.searchButton.setOnClickListener {
-//            // Handle search click
-//        }
     }
 
     private fun setupRecyclerView() {
         binding.recyclerView.apply {
             adapter = movieAdapter
-            layoutManager = GridLayoutManager(requireContext(), 2).apply {
-                spanSizeLookup = object : GridLayoutManager.SpanSizeLookup() {
-                    override fun getSpanSize(position: Int): Int {
-                        return 1 // Each item takes 1 span (so 2 items per row)
-                    }
-                }
-            }
+            layoutManager = GridLayoutManager(requireContext(), 2)
             setHasFixedSize(true)
             addItemDecoration(MovieItemDecoration(requireContext()))
         }
@@ -66,7 +61,7 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private fun setupListeners() {
         binding.swipeRefreshLayout.setOnRefreshListener {
-            viewModel.processIntent(HomeIntent.RefreshMovies)
+            viewModel.processIntent(HomeIntent.LoadMovies)
         }
 
         binding.toggleButton.setOnClickListener {
@@ -77,9 +72,24 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
-                binding.swipeRefreshLayout.isRefreshing = state.isLoading
-                binding.errorText.isVisible = state.error != null
-                binding.errorText.text = state.error
+                binding.swipeRefreshLayout.isRefreshing = false
+                binding.loadingIndicator.isVisible = state.isLoading && !binding.swipeRefreshLayout.isRefreshing
+                
+                // Handle visibility
+                binding.recyclerView.isVisible = !state.isLoading && state.error == null
+                binding.errorStateView.isVisible = state.error != null
+                
+                // Handle error state
+                state.error?.let { error ->
+                    val errorState = when {
+                        error.contains("internet", ignoreCase = true) -> ErrorState.NoInternet
+                        error.contains("empty", ignoreCase = true) -> ErrorState.EmptyMovies
+                        else -> ErrorState.ServerError
+                    }
+                    binding.errorStateView.setErrorState(errorState) {
+                        viewModel.processIntent(HomeIntent.LoadMovies)
+                    }
+                }
 
                 // Update layout manager
                 if (state.isGrid != (binding.recyclerView.layoutManager is GridLayoutManager)) {
@@ -90,11 +100,9 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
 
-                // Collect movies
-                state.movies?.let { moviesFlow ->
-                    moviesFlow.collectLatest { pagingData ->
-                        movieAdapter.submitData(pagingData)
-                    }
+                // Update movies
+                state.movies?.let { pagingData ->
+                    movieAdapter.submitData(pagingData)
                 }
             }
         }

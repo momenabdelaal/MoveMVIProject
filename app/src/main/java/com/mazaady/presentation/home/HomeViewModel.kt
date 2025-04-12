@@ -1,30 +1,32 @@
 package com.mazaady.presentation.home
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.paging.PagingData
 import androidx.paging.cachedIn
-import com.mazaady.data.util.NetworkResult
 import com.mazaady.domain.model.Movie
-import com.mazaady.domain.usecase.GetMoviesUseCase
-import com.mazaady.domain.usecase.ToggleFavoriteUseCase
-import com.mazaady.presentation.base.MviViewModel
+import com.mazaady.domain.repository.MovieRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class HomeViewModel @Inject constructor(
-    private val getMoviesUseCase: GetMoviesUseCase,
-    private val toggleFavoriteUseCase: ToggleFavoriteUseCase
-) : MviViewModel<HomeState, HomeIntent>() {
+    private val repository: MovieRepository
+) : ViewModel() {
+
+    private val _state = MutableStateFlow(HomeState())
+    val state: StateFlow<HomeState> = _state
 
     init {
-        loadMovies()
+        processIntent(HomeIntent.LoadMovies)
     }
 
-    override fun createInitialState(): HomeState = HomeState()
-
-    override fun handleIntent(intent: HomeIntent) {
+    fun processIntent(intent: HomeIntent) {
         when (intent) {
             is HomeIntent.LoadMovies -> loadMovies()
             is HomeIntent.RefreshMovies -> loadMovies()
@@ -36,38 +38,45 @@ class HomeViewModel @Inject constructor(
 
     private fun loadMovies() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
+            _state.value = _state.value.copy(isLoading = true, error = null)
             
             try {
-                val moviesFlow = getMoviesUseCase().cachedIn(viewModelScope)
-                _state.update { it.copy(
-                    isLoading = false,
-                    movies = moviesFlow,
-                    error = null
-                ) }
+                repository.getMovies()
+                    .cachedIn(viewModelScope)
+                    .catch { e ->
+                        _state.value = _state.value.copy(
+                            isLoading = false,
+                            error = e.message ?: "Unknown error occurred"
+                        )
+                    }
+                    .collectLatest { pagingData ->
+                        _state.value = _state.value.copy(
+                            isLoading = false,
+                            movies = pagingData,
+                            error = null
+                        )
+                    }
             } catch (e: Exception) {
-                _state.update { it.copy(
+                _state.value = _state.value.copy(
                     isLoading = false,
                     error = e.message ?: "Unknown error occurred"
-                ) }
+                )
             }
         }
     }
 
     private fun toggleLayout() {
-        _state.update { it.copy(isGrid = !it.isGrid) }
+        _state.value = _state.value.copy(isGrid = !_state.value.isGrid)
     }
 
     private fun toggleFavorite(movie: Movie) {
         viewModelScope.launch {
-            when (val result = toggleFavoriteUseCase(movie)) {
-                is NetworkResult.Success -> {
-                    // The PagingData will automatically refresh with the updated favorite status
-                }
-                is NetworkResult.Error -> {
-                    _state.update { it.copy(error = result.message) }
-                }
-                is NetworkResult.Loading -> Unit
+            try {
+                repository.toggleFavorite(movie)
+            } catch (e: Exception) {
+                _state.value = _state.value.copy(
+                    error = e.message ?: "Error toggling favorite"
+                )
             }
         }
     }

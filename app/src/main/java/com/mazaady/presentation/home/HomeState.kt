@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.Flow
 
 data class HomeState(
     val isLoading: Boolean = false,
+    val movies: PagingData<Movie>? = null,
     val error: String? = null,
-    val isGrid: Boolean = false,
-    val movies: Flow<PagingData<Movie>>? = null
+    val isGrid: Boolean = true
 ) : MviState
