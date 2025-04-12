@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Mazaady Movies</string>
+    <string name="app_name">MazaadyTask</string>
     <string name="search">Search</string>
     <string name="movie_details">Movie Details</string>
     <string name="favorites">Favorites</string>
@@ -10,8 +10,8 @@
     <string name="error_loading_movies">Error loading movies</string>
     <string name="error_loading_movie">Error loading movie details</string>
     <string name="error_image">Error illustration</string>
-    <string name="retry">Try Again</string>
-    <string name="error_no_internet">No Internet Connection</string>
+    <string name="retry">Retry</string>
+    <string name="error_no_internet">No internet connection</string>
     <string name="error_no_internet_message">Please check your connection and try again</string>
     <string name="error_server">Server Error</string>
     <string name="error_server_message">Something went wrong. Please try again later</string>
@@ -20,9 +20,13 @@
     <string name="error_empty_movies">No Movies Found</string>
     <string name="error_empty_movies_message">We couldn\'t find any movies. Please try again later</string>
     <string name="runtime_format">%d minutes</string>
-    <string name="movie_poster">Movie Poster</string>
+    <string name="movie_poster">Movie poster</string>
     <string name="overview">Overview</string>
     <string name="release_date_format">Release Date: %s</string>
-    <string name="rating_format">Rating: %.1f</string>
+    <string name="rating_format">Rating: %s</string>
     <string name="favorite_button">Toggle favorite</string>
+    <string name="error_loading">Error loading data</string>
+    <string name="error_empty_state">No movies found</string>
+    <string name="genres">Genres: %s</string>
+    <string name="runtime">Runtime: %d min</string>
 </resources>
