@@ -78,6 +78,6 @@ class MoviePagingSource @Inject constructor(
     }
 
     companion object {
-        private const val MAX_LIMIT = 60 // Maximum number of items per request
+        private const val MAX_LIMIT = 100 // Maximum number of items per request
     }
 }
