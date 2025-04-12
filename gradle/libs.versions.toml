@@ -1,6 +1,9 @@
 [versions]
 agp = "8.2.2"
+espresso-core-version = "3.6.1"
+junit-version = "1.2.1"
 kotlin = "1.9.22"
+kotlinx-coroutines-test = "1.7.1"
 ksp = "1.9.22-1.0.17"
 core-ktx = "1.12.0"
 junit = "4.13.2"
@@ -8,6 +11,9 @@ androidx-test-ext-junit = "1.1.5"
 espresso-core = "3.5.1"
 appcompat = "1.6.1"
 material = "1.11.0"
+mockito-core = "5.3.1"
+mockito-kotlin = "5.1.0"
+mockk = "1.13.9"
 room = "2.6.1"
 navigation = "2.7.7"
 hilt = "2.48"
@@ -17,16 +23,24 @@ paging = "3.2.1"
 glide = "4.16.0"
 timber = "5.0.1"
 swiperefreshlayout = "1.1.0"
+turbine = "1.0.0"
 
 [libraries]
+androidx-espresso-core-v361 = { module = "androidx.test.espresso:espresso-core", version.ref = "espresso-core-version" }
+androidx-junit-v121 = { module = "androidx.test.ext:junit", version.ref = "junit-version" }
 core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "core-ktx" }
 junit = { group = "junit", name = "junit", version.ref = "junit" }
 androidx-test-ext-junit = { group = "androidx.test.ext", name = "junit", version.ref = "androidx-test-ext-junit" }
 espresso-core = { group = "androidx.test.espresso", name = "espresso-core", version.ref = "espresso-core" }
 appcompat = { group = "androidx.appcompat", name = "appcompat", version.ref = "appcompat" }
+kotlinx-coroutines-test = { module = "org.jetbrains.kotlinx:kotlinx-coroutines-test", version.ref = "kotlinx-coroutines-test" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 
 # Room
+mockito-android = { module = "org.mockito:mockito-android", version.ref = "mockito-core" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito-core" }
+mockito-kotlin = { module = "org.mockito.kotlin:mockito-kotlin", version.ref = "mockito-kotlin" }
+mockk = { module = "io.mockk:mockk", version.ref = "mockk" }
 room-runtime = { group = "androidx.room", name = "room-runtime", version.ref = "room" }
 room-ktx = { group = "androidx.room", name = "room-ktx", version.ref = "room" }
 room-paging = { group = "androidx.room", name = "room-paging", version.ref = "room" }
@@ -56,6 +70,7 @@ glide-compiler = { group = "com.github.bumptech.glide", name = "compiler", versi
 # Timber
 timber = { group = "com.jakewharton.timber", name = "timber", version.ref = "timber" }
 androidx-swiperefreshlayout = { group = "androidx.swiperefreshlayout", name = "swiperefreshlayout", version.ref = "swiperefreshlayout" }
+turbine = { module = "app.cash.turbine:turbine", version.ref = "turbine" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
