@@ -6,6 +6,7 @@ import androidx.core.view.isVisible
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.lifecycle.lifecycleScope
+import androidx.navigation.fragment.findNavController
 import androidx.navigation.fragment.navArgs
 import com.bumptech.glide.Glide
 import com.mazaady.R
@@ -25,9 +26,16 @@ class DetailsFragment : Fragment(R.layout.fragment_details) {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         _binding = FragmentDetailsBinding.bind(view)
+        setupToolbar()
         setupListeners()
         observeState()
         viewModel.processIntent(DetailsIntent.LoadMovie(args.movie))
+    }
+
+    private fun setupToolbar() {
+        binding.toolbar.setNavigationOnClickListener {
+            findNavController().navigateUp()
+        }
     }
 
     private fun setupListeners() {
@@ -41,9 +49,7 @@ class DetailsFragment : Fragment(R.layout.fragment_details) {
     private fun observeState() {
         viewLifecycleOwner.lifecycleScope.launch {
             viewModel.state.collectLatest { state ->
-                binding.progressBar.isVisible = state.isLoading
-                binding.errorText.isVisible = state.error != null
-                binding.errorText.text = state.error
+                binding.detailsLoadingProgressBar.isVisible = state.isLoading
                 binding.content.isVisible = state.movie != null
 
                 state.movie?.let { movie ->
@@ -52,13 +58,7 @@ class DetailsFragment : Fragment(R.layout.fragment_details) {
                         yearText.text = movie.year.toString()
                         ratingText.text = String.format("%.1f", movie.rating)
                         directorText.text = movie.director
-                        runtimeText.text = getString(R.string.runtime_format, movie.runtime)
                         plotText.text = movie.plot
-                        languageText.text = movie.language
-                        countryText.text = movie.country
-                        awardsText.text = movie.awards
-                        boxOfficeText.text = movie.boxOffice
-                        productionText.text = movie.production
                         
                         Glide.with(requireContext())
                             .load(movie.posterUrl)

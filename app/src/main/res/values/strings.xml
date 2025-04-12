@@ -2,6 +2,7 @@
 <resources>
     <string name="app_name">Mazaady</string>
     <string name="search">Search</string>
+    <string name="movie_details">Movie Details</string>
     <string name="toggle_layout">Toggle Layout</string>
     <string name="toggle_favorite">Toggle Favorite</string>
     <string name="toggle_view">Toggle View</string>
