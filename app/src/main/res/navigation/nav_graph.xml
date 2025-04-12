@@ -8,21 +8,33 @@
     <fragment
         android:id="@+id/homeFragment"
         android:name="com.mazaady.presentation.home.HomeFragment"
-        android:label="Movies"
+        android:label="HomeFragment"
         tools:layout="@layout/fragment_home">
         <action
-            android:id="@+id/actionHomeToDetailsFragment"
+            android:id="@+id/action_home_to_detailsFragment"
             app:destination="@id/detailsFragment" />
+        <action
+            android:id="@+id/action_home_to_favoritesFragment"
+            app:destination="@id/favoritesFragment" />
     </fragment>
 
     <fragment
         android:id="@+id/detailsFragment"
         android:name="com.mazaady.presentation.details.DetailsFragment"
-        android:label="Movie Details"
+        android:label="DetailsFragment"
         tools:layout="@layout/fragment_details">
         <argument
             android:name="movie"
             app:argType="com.mazaady.domain.model.Movie" />
+    </fragment>
+
+    <fragment
+        android:id="@+id/favoritesFragment"
+        android:name="com.mazaady.presentation.favorites.FavoritesFragment"
+        android:label="FavoritesFragment">
+        <action
+            android:id="@+id/action_favorites_to_detailsFragment"
+            app:destination="@id/detailsFragment" />
     </fragment>
 
 </navigation>

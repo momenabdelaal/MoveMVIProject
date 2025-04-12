@@ -16,6 +16,13 @@ class MovieAdapter(
     private val onFavoriteClick: (Movie) -> Unit
 ) : PagingDataAdapter<Movie, MovieAdapter.MovieViewHolder>(MovieDiffCallback) {
 
+    private var currentList: List<Movie> = emptyList()
+
+    fun submitList(list: List<Movie>?) {
+        currentList = list ?: emptyList()
+        notifyDataSetChanged() // For simplicity, we can optimize this later with DiffUtil
+    }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): MovieViewHolder {
         val binding = ItemMovieBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -26,9 +33,16 @@ class MovieAdapter(
     }
 
     override fun onBindViewHolder(holder: MovieViewHolder, position: Int) {
-        getItem(position)?.let { movie ->
-            holder.bind(movie)
+        val movie = if (currentList.isNotEmpty()) {
+            currentList[position]
+        } else {
+            getItem(position)
         }
+        movie?.let { holder.bind(it) }
+    }
+
+    override fun getItemCount(): Int {
+        return if (currentList.isNotEmpty()) currentList.size else super.getItemCount()
     }
 
     inner class MovieViewHolder(
@@ -37,10 +51,27 @@ class MovieAdapter(
 
         init {
             binding.root.setOnClickListener {
-                getItem(bindingAdapterPosition)?.let(onMovieClick)
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val movie = if (currentList.isNotEmpty()) {
+                        currentList[position]
+                    } else {
+                        getItem(position)
+                    }
+                    movie?.let { onMovieClick(it) }
+                }
             }
+
             binding.favoriteButton.setOnClickListener {
-                getItem(bindingAdapterPosition)?.let(onFavoriteClick)
+                val position = bindingAdapterPosition
+                if (position != RecyclerView.NO_POSITION) {
+                    val movie = if (currentList.isNotEmpty()) {
+                        currentList[position]
+                    } else {
+                        getItem(position)
+                    }
+                    movie?.let { onFavoriteClick(it) }
+                }
             }
         }
 
@@ -65,7 +96,7 @@ class MovieAdapter(
     }
 
     companion object {
-        private val MovieDiffCallback = object : DiffUtil.ItemCallback<Movie>() {
+        object MovieDiffCallback : DiffUtil.ItemCallback<Movie>() {
             override fun areItemsTheSame(oldItem: Movie, newItem: Movie): Boolean {
                 return oldItem.id == newItem.id
             }

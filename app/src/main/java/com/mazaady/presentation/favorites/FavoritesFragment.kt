@@ -1,4 +1,4 @@
-package com.mazaady.presentation.home
+package com.mazaady.presentation.favorites
 
 import android.os.Bundle
 import android.view.View
@@ -10,17 +10,19 @@ import androidx.navigation.fragment.findNavController
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.mazaady.R
-import com.mazaady.databinding.FragmentHomeBinding
+import com.mazaady.databinding.FragmentFavoritesBinding
 import com.mazaady.domain.model.Movie
+import com.mazaady.presentation.home.MovieAdapter
+import com.mazaady.presentation.home.MovieItemDecoration
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
-class HomeFragment : Fragment(R.layout.fragment_home) {
+class FavoritesFragment : Fragment(R.layout.fragment_favorites) {
 
-    private val viewModel: HomeViewModel by viewModels()
-    private var _binding: FragmentHomeBinding? = null
+    private val viewModel: FavoritesViewModel by viewModels()
+    private var _binding: FragmentFavoritesBinding? = null
     private val binding get() = _binding!!
     private val movieAdapter = MovieAdapter(
         onMovieClick = { movie -> navigateToDetails(movie) },
@@ -29,24 +31,18 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        _binding = FragmentHomeBinding.bind(view)
+        _binding = FragmentFavoritesBinding.bind(view)
         setupToolbar()
         setupRecyclerView()
         setupListeners()
         observeState()
-        viewModel.processIntent(HomeIntent.LoadMovies)
+        viewModel.processIntent(FavoritesIntent.LoadFavorites)
     }
 
     private fun setupToolbar() {
-        binding.favoriteButton.setOnClickListener {
-            findNavController().navigate(
-                HomeFragmentDirections.actionHomeToFavoritesFragment()
-            )
+        binding.toolbar.setNavigationOnClickListener {
+            findNavController().navigateUp()
         }
-
-//        binding.searchButton.setOnClickListener {
-//            // Handle search click
-//        }
     }
 
     private fun setupRecyclerView() {
@@ -66,11 +62,11 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
 
     private fun setupListeners() {
         binding.swipeRefreshLayout.setOnRefreshListener {
-            viewModel.processIntent(HomeIntent.RefreshMovies)
+            viewModel.processIntent(FavoritesIntent.LoadFavorites)
         }
 
         binding.toggleButton.setOnClickListener {
-            viewModel.processIntent(HomeIntent.ToggleLayout)
+            viewModel.processIntent(FavoritesIntent.ToggleLayout)
         }
     }
 
@@ -90,25 +86,21 @@ class HomeFragment : Fragment(R.layout.fragment_home) {
                     }
                 }
 
-                // Collect movies
-                state.movies?.let { moviesFlow ->
-                    moviesFlow.collectLatest { pagingData ->
-                        movieAdapter.submitData(pagingData)
-                    }
-                }
+                // Update movies
+                movieAdapter.submitList(state.movies)
             }
         }
     }
 
     private fun navigateToDetails(movie: Movie) {
-        viewModel.processIntent(HomeIntent.NavigateToDetails(movie))
+        viewModel.processIntent(FavoritesIntent.NavigateToDetails(movie))
         findNavController().navigate(
-            HomeFragmentDirections.actionHomeToDetailsFragment(movie)
+            FavoritesFragmentDirections.actionFavoritesToDetailsFragment(movie)
         )
     }
 
     private fun toggleFavorite(movie: Movie) {
-        viewModel.processIntent(HomeIntent.ToggleFavorite(movie))
+        viewModel.processIntent(FavoritesIntent.ToggleFavorite(movie))
     }
 
     override fun onDestroyView() {

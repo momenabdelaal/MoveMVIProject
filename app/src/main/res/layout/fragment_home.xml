@@ -17,15 +17,32 @@
             app:titleTextColor="@color/white"
             app:title="@string/app_name">
 
-            <ImageButton
-                android:id="@+id/toggleButton"
-                android:layout_width="48dp"
-                android:layout_height="48dp"
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="match_parent"
                 android:layout_gravity="end"
-                app:tint="@color/white"
-                android:background="?attr/selectableItemBackgroundBorderless"
-                android:contentDescription="@string/toggle_layout"
-                android:src="@drawable/ic_grid" />
+                android:orientation="horizontal">
+
+                <ImageButton
+                    android:id="@+id/favoriteButton"
+                    android:layout_width="48dp"
+                    android:layout_height="match_parent"
+                    android:background="?attr/selectableItemBackgroundBorderless"
+                    android:contentDescription="@string/favorites"
+                    android:src="@drawable/ic_favorite"
+                    app:tint="@color/white" />
+
+<!--                <ImageButton-->
+<!--                    android:id="@+id/searchButton"-->
+<!--                    android:layout_width="48dp"-->
+<!--                    android:layout_height="match_parent"-->
+<!--                    android:layout_marginEnd="8dp"-->
+<!--                    android:background="?attr/selectableItemBackgroundBorderless"-->
+<!--                    android:contentDescription="@string/search"-->
+<!--                    android:src="@drawable/ic_search"-->
+<!--                    app:tint="?attr/colorOnSurface" />-->
+
+            </LinearLayout>
 
         </com.google.android.material.appbar.MaterialToolbar>
 
@@ -70,5 +87,15 @@
         </androidx.constraintlayout.widget.ConstraintLayout>
 
     </androidx.swiperefreshlayout.widget.SwipeRefreshLayout>
+
+    <com.google.android.material.floatingactionbutton.FloatingActionButton
+        android:id="@+id/toggleButton"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_margin="16dp"
+        android:contentDescription="@string/toggle_layout"
+        android:src="@drawable/ic_grid_view"
+        app:layout_anchor="@id/swipeRefreshLayout"
+        app:layout_anchorGravity="bottom|end" />
 
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
