@@ -1,46 +1,69 @@
 package com.mazaady.presentation.details
 
+import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.mazaady.data.util.NetworkResult
+import com.mazaady.domain.model.Movie
 import com.mazaady.domain.repository.MovieRepository
-import com.mazaady.presentation.base.MviViewModel
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
 @HiltViewModel
 class DetailsViewModel @Inject constructor(
     private val repository: MovieRepository
-) : MviViewModel<DetailsIntent, DetailsState>() {
+) : ViewModel() {
 
-    override fun createInitialState(): DetailsState = DetailsState()
+    private val _state = MutableStateFlow(DetailsState())
+    val state: StateFlow<DetailsState> = _state
 
-    override fun handleIntent(intent: DetailsIntent) {
-        when (intent) {
-            is DetailsIntent.LoadMovie -> loadMovie(intent.movieId)
-            is DetailsIntent.ToggleFavorite -> toggleFavorite(intent.movie)
-        }
+    fun setMovie(movie: Movie) {
+        _state.update { it.copy(movie = movie) }
     }
 
-    private fun loadMovie(movieId: Int) {
+    fun toggleFavorite() {
+        val currentMovie = _state.value.movie ?: return
+        val updatedMovie = currentMovie.copy(isFavorite = !currentMovie.isFavorite)
+        
         viewModelScope.launch {
-            setState { copy(isLoading = true, error = null) }
+            _state.update { it.copy(isLoading = true, error = null) }
             try {
-                val movie = repository.getMovieDetails(movieId)
-                setState { copy(movie = movie, isLoading = false) }
+                when (val result = repository.toggleFavorite(updatedMovie)) {
+                    is NetworkResult.Success -> {
+                        _state.update { it.copy(
+                            movie = updatedMovie,
+                            isLoading = false,
+                            error = null
+                        ) }
+                    }
+                    is NetworkResult.Error -> {
+                        _state.update { it.copy(
+                            isLoading = false,
+                            error = result.message
+                        ) }
+                    }
+                    is NetworkResult.Loading -> {
+                        _state.update { it.copy(
+                            isLoading = true,
+                            error = null
+                        ) }
+                    }
+                }
             } catch (e: Exception) {
-                setState { copy(error = e.message, isLoading = false) }
-            }
-        }
-    }
-
-    private fun toggleFavorite(movie: Movie) {
-        viewModelScope.launch {
-            try {
-                repository.toggleFavorite(movie)
-                setState { copy(movie = movie.copy(isFavorite = !movie.isFavorite)) }
-            } catch (e: Exception) {
-                setState { copy(error = e.message) }
+                _state.update { it.copy(
+                    isLoading = false,
+                    error = e.message ?: "Unknown error occurred"
+                ) }
             }
         }
     }
 }
+
+data class DetailsState(
+    val movie: Movie? = null,
+    val isLoading: Boolean = false,
+    val error: String? = null
+)
