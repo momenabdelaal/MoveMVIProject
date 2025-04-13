@@ -73,7 +73,7 @@ class DetailsFragment : Fragment(R.layout.fragment_details) {
             titleText.text = movie.title
             overviewText.text = movie.plot
             releaseDateText.text = getString(R.string.release_date_format, movie.year.toString())
-            ratingText.text = getString(R.string.rating_format, movie.rating)
+            ratingText.text = getString(R.string.rating_format, movie.rating.toString())
             
             // Setup favorite button
             favoriteButton.apply {

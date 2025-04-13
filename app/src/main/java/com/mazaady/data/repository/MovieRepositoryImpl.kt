@@ -48,17 +48,13 @@ class MovieRepositoryImpl @Inject constructor(
         }
     }
 
-    override fun getFavoriteMovies(): Flow<NetworkResult<List<Movie>>> = flow {
-        try {
-            dao.getFavoriteMovies()
-                .collect { entities ->
-                    emit(NetworkResult.Success(entities.map { it.toDomainModel() }))
-                }
-        } catch (e: Exception) {
+    override fun getFavoriteMovies(): Flow<NetworkResult<List<Movie>>> = dao.getFavoriteMovies()
+        .map { entities -> entities.map { it.toDomainModel() } }
+        .map<List<Movie>, NetworkResult<List<Movie>>> { movies -> NetworkResult.Success(movies) }
+        .catch { e ->
             Timber.e(e, "Error getting favorite movies")
             emit(NetworkResult.Error(e.message ?: "Unknown error"))
         }
-    }
 
     override suspend fun toggleFavorite(movie: Movie): NetworkResult<Unit> {
         return try {

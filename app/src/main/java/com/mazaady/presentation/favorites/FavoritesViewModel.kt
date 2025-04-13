@@ -33,9 +33,9 @@ class FavoritesViewModel @Inject constructor(
 
     private fun loadFavorites() {
         viewModelScope.launch {
-            _state.update { it.copy(isLoading = true) }
-            repository.getFavoriteMovies()
-                .collectLatest { result ->
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                repository.getFavoriteMovies().collectLatest { result ->
                     when (result) {
                         is NetworkResult.Success -> {
                             _state.update { it.copy(
@@ -51,23 +51,49 @@ class FavoritesViewModel @Inject constructor(
                             ) }
                         }
                         is NetworkResult.Loading -> {
-                            _state.update { it.copy(isLoading = true) }
+                            _state.update { it.copy(
+                                isLoading = true,
+                                error = null
+                            ) }
                         }
                     }
                 }
+            } catch (e: Exception) {
+                _state.update { it.copy(
+                    isLoading = false,
+                    error = e.message ?: "Unknown error occurred"
+                ) }
+            }
         }
     }
 
     private fun toggleLayout() {
-        _state.update { it.copy(isGrid = !it.isGrid) }
+        _state.update { it.copy(
+            isGrid = !it.isGrid,
+            error = null
+        ) }
     }
 
     private fun toggleFavorite(movie: Movie) {
         viewModelScope.launch {
-            when (val result = repository.toggleFavorite(movie)) {
-                is NetworkResult.Success -> loadFavorites() // Reload favorites after toggle
-                is NetworkResult.Error -> _state.update { it.copy(error = result.message) }
-                is NetworkResult.Loading -> Unit
+            _state.update { it.copy(isLoading = true, error = null) }
+            try {
+                when (val result = repository.toggleFavorite(movie)) {
+                    is NetworkResult.Success -> loadFavorites()
+                    is NetworkResult.Error -> _state.update { it.copy(
+                        error = result.message,
+                        isLoading = false
+                    ) }
+                    is NetworkResult.Loading -> _state.update { it.copy(
+                        isLoading = true,
+                        error = null
+                    ) }
+                }
+            } catch (e: Exception) {
+                _state.update { it.copy(
+                    isLoading = false,
+                    error = e.message ?: "Unknown error occurred"
+                ) }
             }
         }
     }

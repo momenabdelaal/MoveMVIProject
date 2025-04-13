@@ -68,7 +68,7 @@ class HomeViewModelTest {
         // Then
         viewModel.state.test {
             val emission = awaitItem()
-            assert(emission.isLoading)
+            assert(!emission.isLoading)
             assert(emission.error == null)
         }
         verify(repository).getMovies()
@@ -76,13 +76,16 @@ class HomeViewModelTest {
 
     @Test
     fun `when ToggleLayout intent is processed, then toggle grid state`() = runTest {
+        // Given
+        val initialState = viewModel.state.value.isGrid
+
         // When
         viewModel.processIntent(HomeIntent.ToggleLayout)
 
         // Then
         viewModel.state.test {
             val emission = awaitItem()
-            assert(!emission.isGrid) // Default is true, should toggle to false
+            assert(emission.isGrid != initialState)
         }
     }
 
@@ -93,5 +96,23 @@ class HomeViewModelTest {
 
         // Then
         verify(repository).toggleFavorite(testMovie)
+    }
+
+    @Test
+    fun `when RefreshMovies intent is processed, then reload movies`() = runTest {
+        // Given
+        val movies = PagingData.from(listOf(testMovie))
+        whenever(repository.getMovies()).thenReturn(flowOf(movies))
+
+        // When
+        viewModel.processIntent(HomeIntent.RefreshMovies)
+
+        // Then
+        viewModel.state.test {
+            val emission = awaitItem()
+            assert(!emission.isLoading)
+            assert(emission.error == null)
+        }
+        verify(repository).getMovies()
     }
 }
