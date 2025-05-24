@@ -1,4 +1,4 @@
-# Mazaady Movies App
+#  Movies App
 
 ## Overview
 A modern Android application that showcases movies from the FreeTestAPI Movies service, featuring a clean and intuitive interface with offline support. Built using the latest Android development practices and libraries.
